@@ -210,7 +210,7 @@ pub fn decode_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
 
 	let impl_block = quote! {
 		impl #impl_generics #crate_path::Decode for #name #ty_generics #where_clause {
-			#[inline(always)]
+			#[inline]
 			fn decode<__CodecInputEdqy: #crate_path::Input>(
 				#input_: &mut __CodecInputEdqy
 			) -> ::core::result::Result<Self, #crate_path::Error> {

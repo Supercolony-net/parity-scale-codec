@@ -75,7 +75,7 @@ fn encode_single_field(
 	let i_self = quote! { self };
 
 	quote_spanned! { field.span() =>
-			#[inline(always)]
+			#[inline]
 			fn encode_to<__CodecOutputEdqy: #crate_path::Output + ?::core::marker::Sized>(
 				&#i_self,
 				__codec_dest_edqy: &mut __CodecOutputEdqy
@@ -83,12 +83,12 @@ fn encode_single_field(
 				#crate_path::Encode::encode_to(&#final_field_variable, __codec_dest_edqy)
 			}
 
-			#[inline(always)]
+			#[inline]
 			fn encode(&#i_self) -> #crate_path::alloc::vec::Vec<::core::primitive::u8> {
 				#crate_path::Encode::encode(&#final_field_variable)
 			}
 
-			#[inline(always)]
+			#[inline]
 			fn using_encoded<R, F: ::core::ops::FnOnce(&[::core::primitive::u8]) -> R>(&#i_self, f: F) -> R {
 				#crate_path::Encode::using_encoded(&#final_field_variable, f)
 			}
@@ -304,7 +304,7 @@ fn impl_encode(data: &Data, type_name: &Ident, crate_path: &syn::Path) -> TokenS
 		).to_compile_error(),
 	};
 	quote! {
-		#[inline(always)]
+		#[inline]
 		fn encode_to<__CodecOutputEdqy: #crate_path::Output + ?::core::marker::Sized>(
 			&#self_,
 			#dest: &mut __CodecOutputEdqy

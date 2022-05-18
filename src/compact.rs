@@ -110,22 +110,22 @@ impl<T> Encode for Compact<T>
 where
 	for<'a> CompactRef<'a, T>: Encode,
 {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		CompactRef(&self.0).size_hint()
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 		CompactRef(&self.0).encode_to(dest)
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode(&self) -> Vec<u8> {
 		CompactRef(&self.0).encode()
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		CompactRef(&self.0).using_encoded(f)
 	}
@@ -142,22 +142,22 @@ where
 	T: CompactAs,
 	for<'b> CompactRef<'b, T::As>: Encode,
 {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		CompactRef(self.0.encode_as()).size_hint()
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode_to<Out: Output + ?Sized>(&self, dest: &mut Out) {
 		CompactRef(self.0.encode_as()).encode_to(dest)
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode(&self) -> Vec<u8> {
 		CompactRef(self.0.encode_as()).encode()
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		CompactRef(self.0.encode_as()).using_encoded(f)
 	}
@@ -168,7 +168,7 @@ where
 	T: CompactAs,
 	Compact<T::As>: Decode,
 {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		let as_ = Compact::<T::As>::decode(input)?;
 		Ok(Compact(<T as CompactAs>::decode_from(as_.0)?))
@@ -232,28 +232,28 @@ impl<T: 'static> HasCompact for T where
 }
 
 impl<'a> Encode for CompactRef<'a, ()> {
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, _dest: &mut W) {
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		f(&[])
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode(&self) -> Vec<u8> {
 		Vec::new()
 	}
 }
 
 impl<'a> Encode for CompactRef<'a, u8> {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		Compact::compact_len(self.0)
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 		match self.0 {
 			0..=0b0011_1111 => dest.push_byte(self.0 << 2),
@@ -261,7 +261,7 @@ impl<'a> Encode for CompactRef<'a, u8> {
 		}
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		let mut r = ArrayVecWrapper(ArrayVec::<u8, 2>::new());
 		self.encode_to(&mut r);
@@ -270,7 +270,7 @@ impl<'a> Encode for CompactRef<'a, u8> {
 }
 
 impl CompactLen<u8> for Compact<u8> {
-	#[inline(always)]
+	#[inline]
 	fn compact_len(val: &u8) -> usize {
 		match val {
 			0..=0b0011_1111 => 1,
@@ -280,12 +280,12 @@ impl CompactLen<u8> for Compact<u8> {
 }
 
 impl<'a> Encode for CompactRef<'a, u16> {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		Compact::compact_len(self.0)
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 		match self.0 {
 			0..=0b0011_1111 => dest.push_byte((*self.0 as u8) << 2),
@@ -294,7 +294,7 @@ impl<'a> Encode for CompactRef<'a, u16> {
 		}
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		let mut r = ArrayVecWrapper(ArrayVec::<u8, 4>::new());
 		self.encode_to(&mut r);
@@ -303,7 +303,7 @@ impl<'a> Encode for CompactRef<'a, u16> {
 }
 
 impl CompactLen<u16> for Compact<u16> {
-	#[inline(always)]
+	#[inline]
 	fn compact_len(val: &u16) -> usize {
 		match val {
 			0..=0b0011_1111 => 1,
@@ -314,12 +314,12 @@ impl CompactLen<u16> for Compact<u16> {
 }
 
 impl<'a> Encode for CompactRef<'a, u32> {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		Compact::compact_len(self.0)
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 		match self.0 {
 			0..=0b0011_1111 => dest.push_byte((*self.0 as u8) << 2),
@@ -332,7 +332,7 @@ impl<'a> Encode for CompactRef<'a, u32> {
 		}
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		let mut r = ArrayVecWrapper(ArrayVec::<u8, 5>::new());
 		self.encode_to(&mut r);
@@ -341,7 +341,7 @@ impl<'a> Encode for CompactRef<'a, u32> {
 }
 
 impl CompactLen<u32> for Compact<u32> {
-	#[inline(always)]
+	#[inline]
 	fn compact_len(val: &u32) -> usize {
 		match val {
 			0..=0b0011_1111 => 1,
@@ -353,12 +353,12 @@ impl CompactLen<u32> for Compact<u32> {
 }
 
 impl<'a> Encode for CompactRef<'a, u64> {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		Compact::compact_len(self.0)
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 		match self.0 {
 			0..=0b0011_1111 => dest.push_byte((*self.0 as u8) << 2),
@@ -378,7 +378,7 @@ impl<'a> Encode for CompactRef<'a, u64> {
 		}
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		let mut r = ArrayVecWrapper(ArrayVec::<u8, 9>::new());
 		self.encode_to(&mut r);
@@ -387,7 +387,7 @@ impl<'a> Encode for CompactRef<'a, u64> {
 }
 
 impl CompactLen<u64> for Compact<u64> {
-	#[inline(always)]
+	#[inline]
 	fn compact_len(val: &u64) -> usize {
 		match val {
 			0..=0b0011_1111 => 1,
@@ -401,12 +401,12 @@ impl CompactLen<u64> for Compact<u64> {
 }
 
 impl<'a> Encode for CompactRef<'a, u128> {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		Compact::compact_len(self.0)
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 		match self.0 {
 			0..=0b0011_1111 => dest.push_byte((*self.0 as u8) << 2),
@@ -426,7 +426,7 @@ impl<'a> Encode for CompactRef<'a, u128> {
 		}
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		let mut r = ArrayVecWrapper(ArrayVec::<u8, 17>::new());
 		self.encode_to(&mut r);
@@ -435,7 +435,7 @@ impl<'a> Encode for CompactRef<'a, u128> {
 }
 
 impl CompactLen<u128> for Compact<u128> {
-	#[inline(always)]
+	#[inline]
 	fn compact_len(val: &u128) -> usize {
 		match val {
 			0..=0b0011_1111 => 1,
@@ -449,7 +449,7 @@ impl CompactLen<u128> for Compact<u128> {
 }
 
 impl Decode for Compact<()> {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(_input: &mut I) -> Result<Self, Error> {
 		Ok(Compact(()))
 	}
@@ -462,7 +462,7 @@ const U64_OUT_OF_RANGE: &str = "out of range decoding Compact<u64>";
 const U128_OUT_OF_RANGE: &str = "out of range decoding Compact<u128>";
 
 impl Decode for Compact<u8> {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		let prefix = input.read_byte()?;
 		Ok(Compact(match prefix % 4 {
@@ -481,7 +481,7 @@ impl Decode for Compact<u8> {
 }
 
 impl Decode for Compact<u16> {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		let prefix = input.read_byte()?;
 		Ok(Compact(match prefix % 4 {
@@ -508,7 +508,7 @@ impl Decode for Compact<u16> {
 }
 
 impl Decode for Compact<u32> {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		let prefix = input.read_byte()?;
 		Ok(Compact(match prefix % 4 {
@@ -548,7 +548,7 @@ impl Decode for Compact<u32> {
 }
 
 impl Decode for Compact<u64> {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		let prefix = input.read_byte()?;
 		Ok(Compact(match prefix % 4 {
@@ -604,7 +604,7 @@ impl Decode for Compact<u64> {
 }
 
 impl Decode for Compact<u128> {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		let prefix = input.read_byte()?;
 		Ok(Compact(match prefix % 4 {

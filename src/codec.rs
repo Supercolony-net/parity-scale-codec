@@ -219,19 +219,19 @@ pub trait Encode {
 	///
 	/// This method is used inside default implementation of `encode`
 	/// to avoid re-allocations.
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		0
 	}
 
 	/// Convert self to a slice and append it to the destination.
-	#[inline(always)]
+	#[inline]
 	fn encode_to<T: Output + ?Sized>(&self, dest: &mut T) {
 		self.using_encoded(|buf| dest.write(buf));
 	}
 
 	/// Convert self to an owned vector.
-	#[inline(always)]
+	#[inline]
 	fn encode(&self) -> Vec<u8> {
 		let mut r = Vec::with_capacity(self.size_hint());
 		self.encode_to(&mut r);
@@ -239,7 +239,7 @@ pub trait Encode {
 	}
 
 	/// Convert self to a slice and then invoke the given closure with it.
-	#[inline(always)]
+	#[inline]
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		f(&self.encode())
 	}
@@ -252,7 +252,7 @@ pub trait Encode {
 	///
 	/// This works by using a special [`Output`] that only tracks the size. So, there are no allocations inside the 
 	/// output. However, this can not prevent allocations that some types are doing inside their own encoding.
-	#[inline(always)]
+	#[inline]
 	fn encoded_size(&self) -> usize {
 		let mut size_tracker = SizeTracker { written: 0 };
 		self.encode_to(&mut size_tracker);
@@ -397,22 +397,22 @@ impl<T, X> Encode for X where
 	T: Encode + ?Sized,
 	X: WrapperTypeEncode<Target = T>,
 {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		(&**self).size_hint()
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		(&**self).using_encoded(f)
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode(&self) -> Vec<u8> {
 		(&**self).encode()
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 		(&**self).encode_to(dest)
 	}
@@ -441,7 +441,7 @@ impl<T, X> Decode for X where
 	T: Decode + Into<X>,
 	X: WrapperTypeDecode<Wrapped=T>,
 {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		input.descend_ref()?;
 		let result = Ok(T::decode(input)?.into());
@@ -482,7 +482,7 @@ pub trait EncodeAsRef<'a, T: 'a> {
 }
 
 impl<T: Encode, E: Encode> Encode for Result<T, E> {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		1 + match *self {
 			Ok(ref t) => t.size_hint(),
@@ -490,7 +490,7 @@ impl<T: Encode, E: Encode> Encode for Result<T, E> {
 		}
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 		match *self {
 			Ok(ref t) => {
@@ -514,7 +514,7 @@ where
 {}
 
 impl<T: Decode, E: Decode> Decode for Result<T, E> {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		match input.read_byte()
 			.map_err(|e| e.chain("Could not result variant byte for `Result`"))?
@@ -541,12 +541,12 @@ impl fmt::Debug for OptionBool {
 }
 
 impl Encode for OptionBool {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		1
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		f(&[match *self {
 			OptionBool(None) => 0u8,
@@ -559,7 +559,7 @@ impl Encode for OptionBool {
 impl EncodeLike for OptionBool {}
 
 impl Decode for OptionBool {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		match input.read_byte()? {
 			0 => Ok(OptionBool(None)),
@@ -573,7 +573,7 @@ impl Decode for OptionBool {
 impl<T: EncodeLike<U>, U: Encode> EncodeLike<Option<U>> for Option<T> {}
 
 impl<T: Encode> Encode for Option<T> {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		1 + match *self {
 			Some(ref t) => t.size_hint(),
@@ -581,7 +581,7 @@ impl<T: Encode> Encode for Option<T> {
 		}
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 		match *self {
 			Some(ref t) => {
@@ -594,7 +594,7 @@ impl<T: Encode> Encode for Option<T> {
 }
 
 impl<T: Decode> Decode for Option<T> {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		match input.read_byte()
 			.map_err(|e| e.chain("Could not decode variant byte for `Option`"))?
@@ -612,29 +612,29 @@ macro_rules! impl_for_non_zero {
 	( $( $name:ty ),* $(,)? ) => {
 		$(
 			impl Encode for $name {
-			    #[inline(always)]
+			    #[inline]
 				fn size_hint(&self) -> usize {
 					self.get().size_hint()
 				}
 
-				#[inline(always)]
+				#[inline]
 				fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 					self.get().encode_to(dest)
 				}
 
-				#[inline(always)]
+				#[inline]
 				fn encode(&self) -> Vec<u8> {
 					self.get().encode()
 				}
 
-				#[inline(always)]
+				#[inline]
 				fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 					self.get().using_encoded(f)
 				}
 			}
 
 			impl Decode for $name {
-			    #[inline(always)]
+			    #[inline]
 				fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 					Self::new(Decode::decode(input)?)
 						.ok_or_else(|| Error::from("cannot create non-zero number from 0"))
@@ -685,9 +685,9 @@ pub(crate) fn encode_slice_no_len<T: Encode, W: Output + ?Sized>(slice: &[T], de
 /// Decode the array.
 ///
 /// This is equivalent to decoding all the element one by one, but it is optimized for some types.
-#[inline(always)]
+#[inline]
 pub(crate) fn decode_array<I: Input, T: Decode, const N: usize>(input: &mut I) -> Result<[T; N], Error> {
-	#[inline(always)]
+	#[inline]
 	fn general_array_decode<I: Input, T: Decode, const N: usize>(input: &mut I) -> Result<[T; N], Error> {
 		let mut uninit = <MaybeUninit<[T; N]>>::uninit();
 		// The following line coerces the pointer to the array to a pointer
@@ -825,19 +825,19 @@ impl_for_non_zero! {
 }
 
 impl<T: Encode, const N: usize> Encode for [T; N] {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		mem::size_of::<T>() * N
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 		encode_slice_no_len(&self[..], dest)
 	}
 }
 
 impl<T: Decode, const N: usize> Decode for [T; N] {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		decode_array(input)
 	}
@@ -846,22 +846,22 @@ impl<T: Decode, const N: usize> Decode for [T; N] {
 impl<T: EncodeLike<U>, U: Encode, const N: usize> EncodeLike<[U; N]> for [T; N] {}
 
 impl Encode for str {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		self.as_bytes().size_hint()
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 		self.as_bytes().encode_to(dest)
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode(&self) -> Vec<u8> {
 		self.as_bytes().encode()
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		self.as_bytes().using_encoded(f)
 	}
@@ -870,7 +870,7 @@ impl Encode for str {
 impl<'a, T: ToOwned + ?Sized> Decode for Cow<'a, T>
 	where <T as ToOwned>::Owned: Decode,
 {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		Ok(Cow::Owned(Decode::decode(input)?))
 	}
@@ -879,12 +879,12 @@ impl<'a, T: ToOwned + ?Sized> Decode for Cow<'a, T>
 impl<T> EncodeLike for PhantomData<T> {}
 
 impl<T> Encode for PhantomData<T> {
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, _dest: &mut W) {}
 }
 
 impl<T> Decode for PhantomData<T> {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(_input: &mut I) -> Result<Self, Error> {
 		Ok(PhantomData)
 	}
@@ -892,7 +892,7 @@ impl<T> Decode for PhantomData<T> {
 
 #[cfg(any(feature = "std", feature = "full"))]
 impl Decode for String {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		Self::from_utf8(Vec::decode(input)?).map_err(|_| "Invalid utf8 sequence".into())
 	}
@@ -909,12 +909,12 @@ pub(crate) fn compact_encode_len_to<W: Output + ?Sized>(dest: &mut W, len: usize
 }
 
 impl<T: Encode> Encode for [T] {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		mem::size_of::<u32>() + mem::size_of::<T>() * self.len()
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 		compact_encode_len_to(dest, self.len()).expect("Compact encodes length");
 
@@ -994,7 +994,7 @@ impl<T: EncodeLike<U>, U: Encode> EncodeLike<&[U]> for Vec<T> {}
 impl<T: EncodeLike<U>, U: Encode> EncodeLike<Vec<U>> for &[T] {}
 
 impl<T: Decode> Decode for Vec<T> {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		<Compact<u32>>::decode(input).and_then(move |Compact(len)| {
 			decode_vec_with_len(input, len as usize)
@@ -1010,12 +1010,12 @@ macro_rules! impl_codec_through_iterator {
 		{ $( $impl_like_generics:tt )* }
 	)*) => {$(
 		impl<$( $generics: Encode ),*> Encode for $type<$( $generics, )*> {
-		    #[inline(always)]
+		    #[inline]
 			fn size_hint(&self) -> usize {
 				mem::size_of::<u32>() $( + mem::size_of::<$generics>() * self.len() )*
 			}
 
-		    #[inline(always)]
+		    #[inline]
 			fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 				compact_encode_len_to(dest, self.len()).expect("Compact encodes length");
 
@@ -1028,7 +1028,7 @@ macro_rules! impl_codec_through_iterator {
 		impl<$( $generics: Decode $( + $decode_additional )? ),*> Decode
 			for $type<$( $generics, )*>
 		{
-		    #[inline(always)]
+		    #[inline]
 			fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 				<Compact<u32>>::decode(input).and_then(move |Compact(len)| {
 					input.descend_ref()?;
@@ -1066,12 +1066,12 @@ impl<T: EncodeLike<U>, U: Encode> EncodeLike<Vec<U>> for VecDeque<T> {}
 impl<T: EncodeLike<U>, U: Encode> EncodeLike<VecDeque<U>> for Vec<T> {}
 
 impl<T: Encode> Encode for VecDeque<T> {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		mem::size_of::<u32>() + mem::size_of::<T>() * self.len()
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 		compact_encode_len_to(dest, self.len()).expect("Compact encodes length");
 
@@ -1106,7 +1106,7 @@ impl<T: Encode> Encode for VecDeque<T> {
 }
 
 impl<T: Decode> Decode for VecDeque<T> {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		Ok(<Vec<T>>::decode(input)?.into())
 	}
@@ -1115,23 +1115,23 @@ impl<T: Decode> Decode for VecDeque<T> {
 impl EncodeLike for () {}
 
 impl Encode for () {
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, _dest: &mut W) {
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		f(&[])
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode(&self) -> Vec<u8> {
 		Vec::new()
 	}
 }
 
 impl Decode for () {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(_: &mut I) -> Result<(), Error> {
 		Ok(())
 	}
@@ -1156,29 +1156,29 @@ macro_rules! tuple_impl {
 		($one:ident, $extra:ident),
 	) => {
 		impl<$one: Encode> Encode for ($one,) {
-		    #[inline(always)]
+		    #[inline]
 			fn size_hint(&self) -> usize {
 				self.0.size_hint()
 			}
 
-		    #[inline(always)]
+		    #[inline]
 			fn encode_to<T: Output + ?Sized>(&self, dest: &mut T) {
 				self.0.encode_to(dest);
 			}
 
-		    #[inline(always)]
+		    #[inline]
 			fn encode(&self) -> Vec<u8> {
 				self.0.encode()
 			}
 
-			#[inline(always)]
+			#[inline]
 			fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 				self.0.using_encoded(f)
 			}
 		}
 
 		impl<$one: Decode> Decode for ($one,) {
-			#[inline(always)]
+			#[inline]
 			fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 				match $one::decode(input) {
 					Err(e) => Err(e),
@@ -1188,7 +1188,7 @@ macro_rules! tuple_impl {
 		}
 
 		impl<$one: DecodeLength> DecodeLength for ($one,) {
-			#[inline(always)]
+			#[inline]
 			fn len(self_encoded: &[u8]) -> Result<usize, Error> {
 				$one::len(self_encoded)
 			}
@@ -1198,7 +1198,7 @@ macro_rules! tuple_impl {
 	};
 	(($first:ident, $fextra:ident), $( ( $rest:ident, $rextra:ident ), )+) => {
 		impl<$first: Encode, $($rest: Encode),+> Encode for ($first, $($rest),+) {
-			#[inline(always)]
+			#[inline]
 			fn size_hint(&self) -> usize {
 				let (
 					ref $first,
@@ -1208,7 +1208,7 @@ macro_rules! tuple_impl {
 				$( + $rest.size_hint() )+
 			}
 
-		    #[inline(always)]
+		    #[inline]
 			fn encode_to<T: Output + ?Sized>(&self, dest: &mut T) {
 				let (
 					ref $first,
@@ -1221,7 +1221,7 @@ macro_rules! tuple_impl {
 		}
 
 		impl<$first: Decode, $($rest: Decode),+> Decode for ($first, $($rest),+) {
-			#[inline(always)]
+			#[inline]
 			fn decode<INPUT: Input>(input: &mut INPUT) -> Result<Self, super::Error> {
 				Ok((
 					match $first::decode(input) {
@@ -1241,7 +1241,7 @@ macro_rules! tuple_impl {
 			for ($first, $($rest),+) {}
 
 		impl<$first: DecodeLength, $($rest),+> DecodeLength for ($first, $($rest),+) {
-			#[inline(always)]
+			#[inline]
 			fn len(self_encoded: &[u8]) -> Result<usize, Error> {
 				$first::len(self_encoded)
 			}
@@ -1268,12 +1268,12 @@ macro_rules! impl_endians {
 		impl Encode for $t {
 			const TYPE_INFO: TypeInfo = TypeInfo::$ty_info;
 
-		    #[inline(always)]
+		    #[inline]
 			fn size_hint(&self) -> usize {
 				mem::size_of::<$t>()
 			}
 
-		    #[inline(always)]
+		    #[inline]
 			fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 				let buf = self.to_le_bytes();
 				f(&buf[..])
@@ -1283,7 +1283,7 @@ macro_rules! impl_endians {
 		impl Decode for $t {
 			const TYPE_INFO: TypeInfo = TypeInfo::$ty_info;
 
-			#[inline(always)]
+			#[inline]
 			fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 				let mut buf = [0u8; mem::size_of::<$t>()];
 				input.read(&mut buf)?;
@@ -1299,12 +1299,12 @@ macro_rules! impl_one_byte {
 		impl Encode for $t {
 			const TYPE_INFO: TypeInfo = TypeInfo::$ty_info;
 
-		    #[inline(always)]
+		    #[inline]
 			fn size_hint(&self) -> usize {
 				mem::size_of::<$t>()
 			}
 
-			#[inline(always)]
+			#[inline]
 			fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 				f(&[*self as u8][..])
 			}
@@ -1313,7 +1313,7 @@ macro_rules! impl_one_byte {
 		impl Decode for $t {
 			const TYPE_INFO: TypeInfo = TypeInfo::$ty_info;
 
-		    #[inline(always)]
+		    #[inline]
 			fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 				Ok(input.read_byte()? as $t)
 			}
@@ -1327,19 +1327,19 @@ impl_one_byte!(u8; U8, i8; I8);
 impl EncodeLike for bool {}
 
 impl Encode for bool {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		mem::size_of::<bool>()
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		f(&[*self as u8][..])
 	}
 }
 
 impl Decode for bool {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		let byte = input.read_byte()?;
 		match byte {
@@ -1351,12 +1351,12 @@ impl Decode for bool {
 }
 
 impl Encode for Duration {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		mem::size_of::<u64>() + mem::size_of::<u32>()
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode(&self) -> Vec<u8> {
 		let secs = self.as_secs();
 		let nanos = self.subsec_nanos();
@@ -1365,7 +1365,7 @@ impl Encode for Duration {
 }
 
 impl Decode for Duration {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		let (secs, nanos) = <(u64, u32)>::decode(input)
 			.map_err(|e| e.chain("Could not decode `Duration(u64, u32)`"))?;
@@ -1383,12 +1383,12 @@ impl<T> Encode for Range<T>
 where
 	T: Encode
 {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		2 * mem::size_of::<T>()
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode(&self) -> Vec<u8> {
 		(&self.start, &self.end).encode()
 	}
@@ -1398,7 +1398,7 @@ impl<T> Decode for Range<T>
 where
 	T: Decode
 {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		let (start, end) = <(T, T)>::decode(input)
 			.map_err(|e| e.chain("Could not decode `Range<T>`"))?;
@@ -1410,12 +1410,12 @@ impl<T> Encode for RangeInclusive<T>
 where
 	T: Encode
 {
-	#[inline(always)]
+	#[inline]
 	fn size_hint(&self) -> usize {
 		2 * mem::size_of::<T>()
 	}
 
-	#[inline(always)]
+	#[inline]
 	fn encode(&self) -> Vec<u8> {
 		(self.start(), self.end()).encode()
 	}
@@ -1425,7 +1425,7 @@ impl<T> Decode for RangeInclusive<T>
 where
 	T: Decode
 {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		let (start, end) = <(T, T)>::decode(input)
 			.map_err(|e| e.chain("Could not decode `RangeInclusive<T>`"))?;
@@ -1865,7 +1865,7 @@ mod tests {
 	}
 
 	impl Encode for TestStruct {
-		#[inline(always)]
+		#[inline]
 		fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 			self.data.encode_to(dest);
 			self.other.encode_to(dest);

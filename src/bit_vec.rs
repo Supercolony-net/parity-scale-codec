@@ -22,7 +22,7 @@ use crate::{
 };
 
 impl<O: BitOrder, T: BitStore + Encode> Encode for BitSlice<T, O> {
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 		let bits = self.len();
 		assert!(
@@ -41,7 +41,7 @@ impl<O: BitOrder, T: BitStore + Encode> Encode for BitSlice<T, O> {
 }
 
 impl<O: BitOrder, T: BitStore + Encode> Encode for BitVec<T, O> {
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 		self.as_bitslice().encode_to(dest)
 	}
@@ -53,7 +53,7 @@ impl<O: BitOrder, T: BitStore + Encode> EncodeLike for BitVec<T, O> {}
 const ARCH32BIT_BITSLICE_MAX_BITS: usize = 0x1fff_ffff;
 
 impl<O: BitOrder, T: BitStore + Decode> Decode for BitVec<T, O> {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		<Compact<u32>>::decode(input).and_then(move |Compact(bits)| {
 			// Otherwise it is impossible to store it on 32bit machine.
@@ -77,7 +77,7 @@ impl<O: BitOrder, T: BitStore + Decode> Decode for BitVec<T, O> {
 }
 
 impl<O: BitOrder, T: BitStore + Encode> Encode for BitBox<T, O> {
-	#[inline(always)]
+	#[inline]
 	fn encode_to<W: Output + ?Sized>(&self, dest: &mut W) {
 		self.as_bitslice().encode_to(dest)
 	}
@@ -86,7 +86,7 @@ impl<O: BitOrder, T: BitStore + Encode> Encode for BitBox<T, O> {
 impl<O: BitOrder, T: BitStore + Encode> EncodeLike for BitBox<T, O> {}
 
 impl<O: BitOrder, T: BitStore + Decode> Decode for BitBox<T, O> {
-	#[inline(always)]
+	#[inline]
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		Ok(BitVec::<T, O>::decode(input)?.into())
 	}
