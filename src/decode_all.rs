@@ -84,6 +84,7 @@ mod tests {
 	}
 
 	impl Decode for TestStruct {
+		#[inline]
 		fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 			Ok(Self {
 				data: Vec::<u32>::decode(input)?,

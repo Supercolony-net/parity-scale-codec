@@ -16,7 +16,7 @@ use std::{time::Duration, any::type_name, convert::{TryFrom, TryInto}};
 
 #[cfg(feature = "bit-vec")]
 use bitvec::{vec::BitVec, order::Lsb0};
-use criterion::{Criterion, black_box, Bencher, criterion_group, criterion_main};
+use criterion::{Criterion, black_box, Bencher, BatchSize, criterion_group, criterion_main};
 use parity_scale_codec::*;
 use parity_scale_codec_derive::{Encode, Decode};
 
@@ -232,11 +232,45 @@ fn encode_decode_bitvec_u8(c: &mut Criterion) {
 	}, vec![1, 2, 5, 32, 1024]);
 }
 
+fn encode_decode_array<T: Codec, const N: usize>(c: &mut Criterion) {
+	c.bench_function(
+		&format!("array_encode_{}", type_name::<[T; N]>()),
+		|bencher| {
+			bencher.iter_batched_ref(
+				|| [0x00; N],
+				|array| {
+					let _ = black_box(array.encode());
+				},
+				BatchSize::SmallInput,
+			)
+		});
+	c.bench_function(
+		&format!("array_decode_{}", type_name::<[T; N]>()),
+		|bencher| {
+			let input = vec![0x00; N * core::mem::size_of::<T>()];
+			bencher.iter_batched_ref(
+				|| &input[..],
+				|input| {
+					let _ = black_box(<[T; N]>::decode(input));
+				},
+				BatchSize::SmallInput,
+			)
+		});
+}
+
 criterion_group!{
 	name = benches;
 	config = Criterion::default().warm_up_time(Duration::from_millis(500)).without_plots();
-	targets = encode_decode_vec::<u8>, encode_decode_vec::<u16>, encode_decode_vec::<u32>, encode_decode_vec::<u64>,
-			encode_decode_vec::<i8>, encode_decode_vec::<i16>, encode_decode_vec::<i32>, encode_decode_vec::<i64>,
-			bench_fn, encode_decode_bitvec_u8, encode_decode_complex_type
+	targets =
+			encode_decode_array::<u8, 8192>,
+			encode_decode_array::<u16, 8192>,
+			encode_decode_array::<u32, 8192>,
+			encode_decode_array::<u64, 8192>,
+			encode_decode_array::<u128, 8192>,
+			encode_decode_array::<i8, 8192>,
+			encode_decode_array::<i16, 8192>,
+			encode_decode_array::<i32, 8192>,
+			encode_decode_array::<i64, 8192>,
+			encode_decode_array::<i128, 8192>,
 }
 criterion_main!(benches);
